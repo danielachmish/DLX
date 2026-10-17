@@ -1,0 +1,15 @@
+{
+  "name": "DLX — ניהול חנות",
+  "short_name": "DLX",
+  "lang": "he",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f8f9",
+  "theme_color": "#0B5C66",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,442 @@
+/* DLX — ערכת העיצוב "רך ומודרני" (מבוססת על ערכת העיצוב של אלדין, הותאמה ל-DLX 17.10.2026).
+   פונטים: Rubik + Heebo. כיוון: RTL. קטלוג רכיבים: docs/design-system.md */
+:root {
+  /* --- צבעי מותג / סמנטיקה (Design Tokens — Responsive UX Refactor 15.9.2026) ---
+     שפה עיצובית אחת "רך ומודרני" (בחירת דניאל 9.10.2026): פינות מעוגלות מאוד,
+     בלי מסגרות, צללים רכים, כפתורים עגולים. כל מסך — קיים או חדש — בונה רק
+     מהטוקנים והרכיבים כאן. הדגשה מכוונת (התראות אדומות, חסימות) נשארת בצבע מלא. */
+  --teal: #0B5C66;
+  --teal-2: #13a3b0;
+  --teal-dark: #08454d;
+  --teal-light: #e3f3f4;
+  --bg: #f6f8f9;
+  --card: #ffffff;
+  --border: #e3e9ec;
+  --text: #18272c;
+  /* ניגודיות (16.10.2026): היה #7a888d = 3.66:1 על לבן, מתחת לתקן. עכשיו ≥5:1 על לבן, על --bg ועל --surface-2 */
+  --muted: #5a6a70;
+  --text-2: #33444e;
+  --surface-2: #eef2f4;
+  --grad-primary: linear-gradient(135deg, #0B5C66, #13a3b0);
+  --green-soft: #e2f6ec;
+  --orange-soft: #fff1dd;
+  --blue-soft: #e8eeff;
+  --red-soft: #fdeceb;
+  /* צבעי האייקונים לפי נושא (16.10.2026) — ר' Icon.jsx TONES */
+  --indigo: #6366f1;
+  --indigo-soft: #ecebff;
+  --amber: #b7791f;
+  --amber-soft: #fdf3dc;
+  --green: #1c8a4b;
+  --blue: #2563eb;
+  --blue-dark: #1d4ed8;
+  --orange: #c2760a;
+  --red: #c0392b;
+  --gray: #6b7280;
+
+  /* --- סולם ריווח (בסיס 8px) --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* --- רדיוסים --- */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  /* --- צללים רכים בלבד (במקום מסגרות) --- */
+  --shadow-sm: 0 2px 10px rgba(20, 60, 70, 0.05);
+  --shadow-md: 0 8px 24px rgba(20, 60, 70, 0.08);
+  --shadow-btn: 0 8px 18px rgba(11, 92, 102, 0.25);
+  --shadow-lg: 0 18px 44px rgba(10, 40, 50, 0.18);
+  --shadow-danger: 0 8px 18px rgba(192, 57, 43, 0.25);
+  --shadow-warn: 0 8px 18px rgba(194, 118, 10, 0.25);
+  --toast-bg: #1d2a2f;
+  --toast-fg: #ffffff;
+  --toast-action-bg: rgba(255, 255, 255, 0.14);
+  --toast-action-fg: #7fe0d0;
+
+  /* --- שפה אחידה (16.10.2026, ר' docs/design-system.md): טוקנים לרכיבים המשותפים --- */
+  --on-primary: #ffffff;          /* טקסט / אייקון על רקע מלא (גרדיאנט, טורקיז, אדום) */
+  --overlay: rgba(10, 30, 35, 0.42); /* רקע כהה מאחורי חלון */
+  --field-bg: #e9eff2;            /* שדה קלט: מילוי רך, בלי מסגרת — כהה מעט מהרקע ומהכרטיס */
+  --field-bg-focus: #ffffff;
+  --focus-ring: 0 0 0 3px rgba(19, 163, 176, 0.35);
+  --btn-disabled-bg: #e6ecee;     /* כפתור מושבת: קריא (5:1), לא "נעלם" */
+  --btn-disabled-fg: #56666b;
+  --switch-off: #c5d1d5;
+  --knob: #ffffff;
+  --tap: 44px;                    /* יעד לחיצה מינימלי במסך מגע */
+  --check-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  --page-narrow: 760px;           /* מסך טופס / רשימה אחת — עמודה ממורכזת */
+
+  /* --- מעטפת: רוחבי אזור ניווט לפי סוג מכשיר --- */
+  --nav-rail-width: 76px;
+  --nav-sidebar-width: 248px;
+  --content-max-width: 1440px;
+
+  /* --- DLX: טוקנים סמנטיים למסמכים ולמצבים --- */
+  --doc-final: #1c8a4b;      /* מסמך שהופק */
+  --doc-final-soft: #e2f6ec;
+  --doc-credit: #a21caf;     /* זיכוי / החזרה */
+  --doc-credit-soft: #fbe8fd;
+  --doc-draft: #6b7280;      /* טיוטה / ממתין */
+  --doc-draft-soft: #eef2f4;
+  --exception: #c0392b;      /* חריגה שדורשת טיפול */
+  --exception-soft: #fdeceb;
+  --pos-total-bg: #08454d;   /* פס הסה"כ בקופה */
+  --pos-total-fg: #ffffff;
+  --zone-warn-bg: #fff1dd;        /* כרטיס שדורש תשומת לב (שטר לא מקושר, שאלה פתוחה, KPI בהתראה) */
+  --light-ok: #1c8a4b;            /* רמזור ירוק */
+  --on-strong: #ffffff;           /* טקסט על תגית בצבע מלא (שריון / עסקה / הוחזק) */
+  --link-underline: rgba(11, 92, 102, .35);
+  --warn-light: #fff6e8;
+  --warn-text: #9a5b00;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Rubik", "Heebo", "Segoe UI", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  direction: rtl;
+}
+
+button { font-family: inherit; }
+
+/* ===== כפתורים ===== */
+.action-btn {
+  display: block; width: 100%; padding: 15px 18px; font-size: 17px; font-weight: 600; font-family: inherit;
+  border: none; border-radius: var(--radius-pill); background: var(--grad-primary); color: var(--on-primary); margin-top: 14px;
+  min-height: 44px; cursor: pointer; box-shadow: var(--shadow-btn);
+  transition: transform .1s, box-shadow .15s, filter .15s; -webkit-tap-highlight-color: transparent;
+}
+.action-btn:active:not(:disabled) { transform: scale(.98); }
+.action-btn:hover:not(:disabled) { filter: brightness(1.05); }
+.action-btn.secondary { background: var(--teal-light); color: var(--teal); border: none; box-shadow: none; }
+/* סוגי כפתורים (16.10.2026, ר' docs/design-system.md) — רק מחלקות, בלי style:
+   ראשי (ברירת מחדל, גרדיאנט) · secondary (רך) · ghost (שקוף) · danger-soft (מחיקה / ביטול רגיל) ·
+   danger (אדום מלא — רק בתוך אישור של פעולה מסוכנת) · inline (ברוחב התוכן) · small (בתוך שורה) */
+.action-btn.ghost { background: transparent; color: var(--teal); box-shadow: none; }
+.action-btn.ghost:hover:not(:disabled) { background: var(--teal-light); filter: none; }
+.action-btn.danger-soft { background: var(--red-soft); color: var(--red); box-shadow: none; }
+.action-btn.danger { background: var(--red); color: var(--on-primary); box-shadow: var(--shadow-danger); }
+.action-btn.warn { background: var(--orange); box-shadow: var(--shadow-warn); }
+.action-btn.inline { display: inline-flex; width: auto; align-items: center; justify-content: center; gap: 8px; }
+.action-btn:disabled { background: var(--btn-disabled-bg); color: var(--btn-disabled-fg); box-shadow: none; cursor: not-allowed; }
+/* גרסה קומפקטית — לפעולות שורה בתוך כרטיס (למשל שמירה/השבתה/מחיקה ליד
+   משתמש), לא לפעולה הראשית של המסך. ר' בקשת דניאל 17.9.2026: "לא ענקיים" */
+.action-btn.small { display: inline-block; width: auto; flex: 1; padding: 9px 12px; font-size: 13.5px; margin-top: 0; min-height: unset; border-radius: var(--radius-pill); box-shadow: none; }
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.btn-row .action-btn { margin-top: 0; width: auto; flex: 1 1 140px; }
+.btn-row .action-btn.small { flex: 1 1 90px; }
+
+.shipment-card {
+  background: var(--card); border: none; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 14px; margin-top: 12px;
+}
+.shipment-card .track { font-family: monospace; font-size: 13px; color: var(--muted); }
+
+/* ==================================================================
+   רכיבים משותפים — שפה אחידה לכל המסכים (דניאל, 16.10.2026).
+   קטלוג ודוגמאות: docs/design-system.md. מסך חדש / שינוי — רק מאלה ומהטוקנים.
+   ================================================================== */
+/* מיקוד מקלדת — טבעת אחת לכל המערכת */
+:where(button, a, summary, [role="tab"], [role="button"], [tabindex]):focus-visible { outline: 2px solid var(--teal-2); outline-offset: 2px; }
+
+/* כרטיס בסיסי: לבן, צל רך, בלי מסגרת */
+.card { background: var(--card); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: var(--space-4); }
+/* ערימה: כרטיסים / אזורים אחד מתחת לשני עם רווח אחיד */
+.stack { display: flex; flex-direction: column; gap: var(--space-3); }
+.card-title { display: flex; align-items: center; gap: var(--space-2); font-weight: 700; font-size: 16px; margin: 0 0 var(--space-3); }
+.card-title > svg.tone { color: var(--ic); background: var(--ics); border-radius: 50%; padding: 6px; box-sizing: content-box; flex-shrink: 0; }
+/* רשת כרטיסים: עמודה אחת בטלפון, כמה עמודות כשיש מקום */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: var(--space-3); align-items: start; }
+/* מסך טופס / רשימה אחת — עמודה ממורכזת ולא "דבוקה" לימין במחשב */
+.page-narrow { max-width: var(--page-narrow); margin-inline: auto; }
+
+/* כותרת אזור בתוך מסך (לא חוזרת על הכותרת שבפס העליון) */
+.section-title { display: flex; align-items: center; gap: var(--space-2); }
+.section-title > svg.tone { color: var(--ic); background: var(--ics); border-radius: 50%; padding: 6px; box-sizing: content-box; flex-shrink: 0; }
+.section-sub { color: var(--muted); font-size: 13.5px; margin: -4px 2px var(--space-3); line-height: 1.5; }
+
+/* שורת פעולות בראש מסך (PageHeader.jsx) — הכותרת עצמה בפס העליון */
+.page-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
+.page-head-sub { color: var(--muted); font-size: 13.5px; min-width: 0; flex: 1 1 200px; line-height: 1.5; }
+.page-head-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-inline-start: auto; }
+.page-head-actions .action-btn { margin-top: 0; }
+
+/* כפתור אייקון עגול (44px) — תמיד עם aria-label; צבע לפי נושא האייקון (TONES) */
+.icon-btn {
+  position: relative; width: var(--tap); height: var(--tap); flex: 0 0 auto; border: none; border-radius: 50%; cursor: pointer; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--text-2);
+  font-family: inherit; -webkit-tap-highlight-color: transparent; transition: background .15s, transform .1s;
+}
+.icon-btn:active:not(:disabled) { transform: scale(.94); }
+.icon-btn:disabled { background: var(--btn-disabled-bg); color: var(--btn-disabled-fg); cursor: not-allowed; }
+.icon-btn:has(> svg.tone) { background: var(--ics); color: var(--ic); }
+.icon-btn.plain { background: transparent; }
+
+/* שבב סינון (chip-f) — לבחירה מרובה / סינון; לשוניות — רק ב-Tabs */
+.chip-f { display: inline-flex; align-items: center; gap: 6px; }
+
+/* לשוניות — Tabs.jsx. pills (ברירת מחדל): שורה נגללת; seg: מקטעים על פס אפור (2–4 אפשרויות).
+   הלשונית הפעילה נגללת לתוך המסך, ובקצה שיש בו עוד — דהייה רכה */
+.tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 6px; margin-bottom: var(--space-3); scroll-padding-inline: 32px; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs > button {
+  flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; font-family: inherit;
+  background: var(--card); color: var(--text-2); padding: 8px 15px; border-radius: var(--radius-pill); font-size: 13.5px; font-weight: 500;
+  box-shadow: var(--shadow-sm); white-space: nowrap; min-height: 38px; -webkit-tap-highlight-color: transparent;
+}
+.tabs > button.on { background: var(--teal); color: var(--on-primary); font-weight: 600; box-shadow: var(--shadow-btn); }
+.tabs > button .nav-badge { margin-inline-start: 2px; }
+.tabs.seg { background: var(--surface-2); border-radius: var(--radius-pill); padding: 4px; gap: 3px; }
+.tabs.seg > button { flex: 1 0 auto; background: none; box-shadow: none; color: var(--muted); font-weight: 700; font-size: 13px; padding: 8px 12px; }
+.tabs.seg > button.on { background: var(--card); color: var(--teal); box-shadow: var(--shadow-sm); }
+.tabs.fade-s { -webkit-mask-image: linear-gradient(to left, transparent 0, black 32px); mask-image: linear-gradient(to left, transparent 0, black 32px); }
+.tabs.fade-e { -webkit-mask-image: linear-gradient(to right, transparent 0, black 32px); mask-image: linear-gradient(to right, transparent 0, black 32px); }
+.tabs.fade-s.fade-e {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 32px, black calc(100% - 32px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 32px, black calc(100% - 32px), transparent 100%);
+}
+
+/* אריח מספר (StatCard.jsx) — בלי מסגרת; tone צובע רק את המספר; לחיץ = מסנן */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: var(--space-2); margin-bottom: var(--space-3); }
+.stat-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; text-align: start;
+  background: var(--card); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); padding: 12px 14px;
+  font-family: inherit; color: var(--text);
+}
+button.stat-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.stat-card.on { box-shadow: 0 0 0 2px var(--teal-2), var(--shadow-sm); background: var(--teal-light); }
+.stat-label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.stat-label svg.tone { color: var(--ic); }
+.stat-value { font-size: 24px; font-weight: 800; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat-sub { font-size: 12px; color: var(--muted); }
+.stat-card.ok .stat-value { color: var(--green); }
+.stat-card.warn .stat-value { color: var(--orange); }
+.stat-card.info .stat-value { color: var(--blue); }
+.stat-card.danger .stat-value { color: var(--red); }
+.stat-card.teal .stat-value { color: var(--teal); }
+.stat-card .skeleton-line { width: 60%; height: 22px; margin-top: 4px; }
+
+/* מצב ריק — EmptyState.jsx (התבנית של "משימות"): עיגול רך עם אייקון, כותרת, הסבר, פעולה */
+.empty-state.es { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 48px 16px; }
+.es-icon { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; background: var(--ics, var(--teal-light)); color: var(--ic, var(--teal)); }
+.es.ok .es-icon { --ic: var(--green); --ics: var(--green-soft); }
+.es.warn .es-icon { --ic: var(--orange); --ics: var(--orange-soft); }
+.es.info .es-icon { --ic: var(--blue); --ics: var(--blue-soft); }
+.es.danger .es-icon { --ic: var(--red); --ics: var(--red-soft); }
+.es-title { color: var(--text); font-size: 17px; font-weight: 700; }
+.es-text { color: var(--muted); font-size: 14px; max-width: 420px; line-height: 1.5; }
+.es .action-btn { margin-top: var(--space-3); }
+.es.compact { padding: 24px 12px; }
+.es.compact .es-icon { width: 48px; height: 48px; }
+
+/* פעולה ראשית אחת למסך (ActionBar.jsx): בטלפון — צמודה לתחתית (מעל הסרגל התחתון), בטאבלט/מחשב — בסוף התוכן */
+.action-bar {
+  position: sticky; bottom: 0; z-index: 6; display: flex; gap: var(--space-2); align-items: center;
+  margin: var(--space-4) calc(-1 * var(--space-4)) 0; padding: 10px var(--space-4) calc(10px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+.action-bar .action-btn { margin-top: 0; flex: 1 1 auto; }
+.action-bar .action-btn.secondary, .action-bar .action-btn.ghost { flex: 0 0 auto; width: auto; }
+.has-bottom-nav .action-bar { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+
+/* חלון אישור / שאלה (dialogs.js + DialogHost.jsx) — גיליון תחתון בטלפון, חלון באמצע במחשב */
+.modal-backdrop.dlg-backdrop { z-index: 55; } /* מעל חלון אחר ומעל ההודעות הצפות — שאלה תמיד למעלה */
+.dlg { display: flex; flex-direction: column; gap: var(--space-2); }
+.dlg-head { display: flex; align-items: flex-start; gap: var(--space-3); }
+.dlg-icon { width: var(--tap); height: var(--tap); border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; background: var(--teal-light); color: var(--teal); }
+.dlg.danger .dlg-icon { background: var(--red-soft); color: var(--red); }
+.dlg-title { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.3; }
+.dlg-text { margin: 4px 0 0; color: var(--text-2); font-size: 14.5px; line-height: 1.55; white-space: pre-line; }
+.dlg-field { display: flex; flex-direction: column; gap: 6px; margin-top: var(--space-2); }
+.dlg-field > span { font-size: 13.5px; font-weight: 600; color: var(--text-2); }
+.dlg-field input, .dlg-field textarea { width: 100%; font-size: 16px; }
+.dlg-err { color: var(--red); font-size: 13px; }
+.dlg-actions { display: flex; flex-direction: column-reverse; gap: var(--space-2); margin-top: var(--space-3); }
+.dlg-actions .action-btn, .dlg-choices .action-btn { margin-top: 0; }
+.dlg-choices { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); }
+@media (min-width: 700px) {
+  .modal-backdrop.center-wide { align-items: center; }
+  .modal-backdrop.center-wide > .modal-sheet { border-radius: var(--radius-lg); max-width: 440px; padding-bottom: 22px; }
+  .modal-backdrop.center-wide > .modal-sheet::before { display: none; }
+  .dlg-actions { flex-direction: row; justify-content: flex-start; }
+  .dlg-actions .action-btn { width: auto; flex: 0 0 auto; padding-inline: 22px; }
+}
+
+/* שלד טעינה — Skeleton.jsx: list (ברירת מחדל) · card · counters · text */
+.skeleton-counters { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 140px), 1fr)); gap: var(--space-2); }
+.skeleton-counters .skeleton-card { padding: 12px 14px; gap: 8px; }
+.skeleton-line.w30 { width: 30%; }
+.skeleton-line.big { height: 22px; }
+.skeleton.text { gap: 8px; }
+
+/* מגע: כל כפתור / לשונית / שבב / שדה לפחות 44px */
+@media (pointer: coarse) {
+  .tabs > button, .toggle button, .rp-seg button, .chip-f, .metric-chip, .action-btn.small, .ic-btn, .wn-x, .btn-link-toggle, .more-row-btn { min-height: var(--tap); }
+  :where(input[type="text"], input[type="number"], input[type="tel"], input[type="date"], input[type="time"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input:not([type]), select) { min-height: var(--tap); }
+}
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: none; box-shadow: var(--shadow-sm); border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 10px; }
+.toggle { display: inline-flex; border: none; background: var(--card); box-shadow: var(--shadow-sm); border-radius: var(--radius-pill); padding: 3px; gap: 2px; }
+.toggle button { border: none; background: transparent; color: var(--text-2); padding: 7px 14px; font-size: 12.5px; border-radius: var(--radius-pill); font-family: inherit; cursor: pointer; }
+.toggle button.active { background: var(--teal); color: var(--on-primary); font-weight: 600; }
+
+.admin-list-item { background: var(--card); border: none; box-shadow: var(--shadow-sm); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 10px; }
+.admin-list-item .top { display: flex; justify-content: space-between; align-items: center; }
+.admin-list-item .actions { display: flex; gap: 6px; margin-top: 8px; }
+.admin-list-item .actions button { flex: 1; padding: 9px; border-radius: var(--radius-pill); border: none; font-size: 13px; font-family: inherit; cursor: pointer; }
+.btn-approve { background: var(--green); color: var(--on-primary); }
+.btn-reject { background: var(--red); color: var(--on-primary); }
+.admin-list-item .actions .action-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+
+/* שדה טקסט "חשוף" בלי מחלקה — אותו מראה כמו שאר השדות. :where = בלי משקל,
+   כך שכל עיצוב ייעודי של מסך גובר עליו */
+/* שדה (16.10.2026, "רך ומודרני"): מילוי רך בלי מסגרת גלויה, בשני המצבים. בפוקוס — רקע בהיר + טבעת טורקיז.
+   :where = בלי משקל, כך שכל עיצוב ייעודי של מסך גובר עליו */
+:where(input[type="text"], input[type="number"], input[type="tel"], input[type="date"], input[type="time"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input:not([type])) {
+  padding: 10px 12px; border-radius: var(--radius-sm); border: 1.5px solid transparent; font-size: 14px; font-family: inherit; background: var(--field-bg); color: inherit;
+}
+:where(input[type="text"], input[type="number"], input[type="tel"], input[type="date"], input[type="time"], input[type="search"], input[type="email"], input[type="password"], input[type="url"], input:not([type])):focus {
+  outline: none; border-color: var(--teal-2); background: var(--field-bg-focus); box-shadow: var(--focus-ring);
+}
+:where(textarea, select) {
+  width: 100%; padding: 11px 13px; border-radius: var(--radius-sm); border: 1.5px solid transparent; font-size: 14px; font-family: inherit; background: var(--field-bg); color: inherit;
+}
+:where(textarea, select):focus, .text-input:focus, .select-input:focus { outline: none; border-color: var(--teal-2); background: var(--field-bg-focus); box-shadow: var(--focus-ring); }
+:where(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
+
+/* תיבת סימון ועיגול בחירה — אותו מראה בכל המערכת (במקום של הדפדפן, 13px) */
+:where(input[type="checkbox"], input[type="radio"]) {
+  appearance: none; -webkit-appearance: none; margin: 0; flex: 0 0 auto; cursor: pointer;
+  width: 22px; height: 22px; border: none; background: var(--field-bg); box-shadow: inset 0 0 0 2px var(--switch-off);
+  border-radius: var(--radius-xs); display: inline-grid; place-content: center; vertical-align: middle; transition: background .15s, box-shadow .15s;
+}
+:where(input[type="radio"]) { border-radius: 50%; }
+:where(input[type="checkbox"]):checked { background: var(--teal) var(--check-mark) center / 16px no-repeat; box-shadow: none; }
+:where(input[type="radio"]):checked { background: var(--field-bg); box-shadow: inset 0 0 0 7px var(--teal); }
+:where(input[type="checkbox"], input[type="radio"]):disabled { opacity: .5; cursor: default; }
+:where(input[type="checkbox"], input[type="radio"]):focus-visible { outline: none; box-shadow: var(--focus-ring); }
+:where(input[type="range"]) { accent-color: var(--teal-2); }
+
+.modal-backdrop {
+  position: fixed; inset: 0; background: var(--overlay); animation: fade-in .18s ease-out; display: flex; align-items: flex-end; justify-content: center;
+  /* מעל כפתור "שליחה" הצמוד בסל (.ag-sticky, 20) ופס הסל (30), מתחת להודעות הצפות (50) */
+  z-index: 40;
+}
+.modal-sheet {
+  background: var(--card); width: 100%; max-width: 480px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 14px 20px 22px;
+  box-shadow: var(--shadow-lg); animation: sheet-up .22s ease-out;
+  padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+}
+/* ידית קטנה בראש החלון — כמו באפליקציות */
+.modal-sheet::before { content: ''; display: block; width: 40px; height: 5px; border-radius: var(--radius-pill); background: var(--switch-off); margin: 0 auto 12px; }
+.modal-sheet h3 { margin-top: 0; font-size: 19px; }
+@keyframes sheet-up { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .modal-sheet, .modal-backdrop { animation: none; } }
+
+/* ---------- הודעות צף (Toast) ---------- */
+.toast-stack {
+  position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+  width: calc(100% - 28px); max-width: 452px; z-index: 50;
+  display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+}
+.toast {
+  background: var(--toast-bg); color: var(--toast-fg); padding: 12px 18px; border-radius: var(--radius-pill);
+  font-size: 13.5px; box-shadow: var(--shadow-lg);
+  animation: toast-in .25s ease-out;
+}
+@keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+
+/* ===== שלד טעינה ===== */
+.skeleton { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+.skeleton-card { background: var(--card); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.skeleton-line { display: block; height: 12px; border-radius: var(--radius-xs); background: linear-gradient(90deg, var(--surface-2) 0%, var(--border) 40%, var(--surface-2) 80%); background-size: 200% 100%; animation: skeleton-shine 1.3s ease-in-out infinite; }
+.skeleton-line.w60 { width: 60%; height: 15px; }
+.skeleton-line.w40 { width: 40%; }
+.skeleton-line.w80 { width: 80%; }
+@keyframes skeleton-shine { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton-line { animation: none; } }
+
+/* ===== מצב לילה (9.10.2026) — בחירה של המשתמש בתפריט שלו, כבוי כברירת מחדל.
+   רק הטוקנים מתחלפים; צבעי ההדגשה (אדום/כתום/ירוק) נשארים בולטים ===== */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1719;
+  --card: #172327;
+  --surface-2: #1f2d32;
+  --border: #2b3b40;
+  --text: #e5eef0;
+  --text-2: #c3d0d3;
+  --muted: #9aabb0;
+  --teal: #2fa5b1;
+  --teal-dark: #8fdbe3;
+  --teal-light: #173b40;
+  --green-soft: #15362a;
+  --orange-soft: #3b2d17;
+  --blue-soft: #1c2848;
+  --indigo: #a5a8ff;
+  --indigo-soft: #26284a;
+  --amber: #e2b04f;
+  --amber-soft: #3a2f17;
+  --red-soft: #3e201d;
+  --green: #45cc85;
+  --blue: #7aa2ff;
+  --orange: #f0a347;
+  --red: #ff6f61;
+  --shadow-sm: 0 2px 10px rgba(0,0,0,.35);
+  --shadow-md: 0 8px 24px rgba(0,0,0,.45);
+  /* טוקנים שהרקעים הקבועים עברו אליהם (16.10.2026) — גם להם ערך לילה */
+  --blue-dark: #9db8ff;
+  --zone-warn-bg: #2a2218;
+  --light-ok: #23a565;
+  --on-strong: #0f1719;           /* בלילה התגיות בהירות — טקסט כהה */
+  --link-underline: rgba(47, 165, 177, .5);
+  --warn-light: #3b2d17;
+  --warn-text: #f0b25a;
+  --doc-final: #45cc85;
+  --doc-final-soft: #15362a;
+  --doc-credit: #e58cf0;
+  --doc-credit-soft: #3a1d3e;
+  --doc-draft: #9aabb0;
+  --doc-draft-soft: #1f2d32;
+  --exception: #ff6f61;
+  --exception-soft: #3e201d;
+  --pos-total-bg: #13262a;
+  --pos-total-fg: #e5eef0;
+  /* רכיבים משותפים (16.10.2026) */
+  --on-primary: #ffffff;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --field-bg: #223439;
+  --field-bg-focus: #233439;
+  --focus-ring: 0 0 0 3px rgba(47, 165, 177, 0.45);
+  --btn-disabled-bg: #26363b;
+  --btn-disabled-fg: #a3b3b8;
+  --switch-off: #3a4a50;
+  --knob: #e5eef0;
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.55);
+  --teal-2: #3cc0cc;
+  --grad-primary: linear-gradient(135deg, #1b7a85, #2fb2bf);
+  --shadow-btn: 0 8px 18px rgba(0, 0, 0, 0.4);
+}
+html[data-theme="dark"] body { background: var(--bg); color: var(--text); }
+/* שדות בלילה: הצבעים מגיעים מהטוקנים (--field-bg) — בלי מסגרת גלויה ובלי "מלבן בתוך גלולה" (16.10.2026) */
+html[data-theme="dark"] :where(input, select, textarea) { color: var(--text); }
+
+/* ===== גודל טקסט (בחירה אישית) ===== */
+html[data-text="large"] { font-size: 112%; }
+html[data-text="xlarge"] { font-size: 125%; }

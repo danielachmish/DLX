@@ -5,9 +5,9 @@
   "description": "DLX — מערכת ניהול חנות: קופה, מלאי, רכש ומסמכים חשבונאיים",
   "packageManager": "pnpm@10.28.0",
   "scripts": {
-    "build": "pnpm -r build",
+    "build": "pnpm --filter @dlx/web build",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
+    "test": "pnpm --filter @dlx/core test && pnpm --filter @dlx/api test",
     "dev:api": "pnpm --filter @dlx/api dev",
     "dev:web": "pnpm --filter @dlx/web dev",
     "db:setup": "bash scripts/db-setup.sh",
