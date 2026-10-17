@@ -5,7 +5,7 @@ import { useSyncExternalStore } from 'react';
 export interface SessionUser { id: string; name: string; email: string | null; role: string; branchId: string | null; permissions: string[] }
 export interface Session {
   token: string; slug: string; user: SessionUser;
-  tenant: { id: string; slug: string; legal_name: string; trade_name: string | null; tax_id: string; tax_status: 'murshe' | 'company' | 'patur'; status: string };
+  tenant: { id: string; slug: string; legal_name: string; trade_name: string | null; tax_id: string; tax_status: 'murshe' | 'company' | 'patur'; status: string; documents_mode?: 'shadow' | 'live' | 'training'; training_of?: string | null };
   branches: { id: string; name: string; tax_zone: string }[];
   registers: { id: string; branch_id: string; code: string; name: string }[];
 }

@@ -206,6 +206,8 @@ describe('documents', () => {
     expect(p1.body.mark).toBe('מקור');
     expect(p2.body.mark).toBe('העתק נאמן למקור');
     expect(p1.body.html).toContain('חשבונית מס / קבלה');
+    // מצב פיילוט (ברירת מחדל): כל מסמך מסומן כלא רשמי
+    expect(p1.body.html).toContain('פיילוט — לא מסמך רשמי');
   });
 
   it('QA-03 / T24: issued documents and movements cannot be changed or deleted, even directly in the DB', async () => {
@@ -236,6 +238,17 @@ describe('documents', () => {
     expect((await app.inject({ method: 'GET', url: '/v1/public/documents/short' })).statusCode).toBe(404);
   });
 
+  it('pilot: switching to official documents is owner-only, needs registration and exact confirmation', async () => {
+    const cur = await owner.get('/v1/settings/documents-mode');
+    expect(cur.body.documents_mode).toBe('shadow');
+    const mgr = client(app, (await login(app, 'demo', 'manager@demo.co.il', 'demo1234')).token);
+    expect((await mgr.put('/v1/settings/documents-mode', { mode: 'live' })).status).toBe(403);
+    const noConfirm = await owner.put('/v1/settings/documents-mode', { mode: 'live', confirm: 'כן' });
+    expect(noConfirm.body.code).toBe('confirm');
+    const ok = await owner.put('/v1/settings/documents-mode', { mode: 'live', confirm: 'אני מאשר שהתוכנה רשומה ושרו"ח אישר את המסמכים' });
+    expect(ok.body.documents_mode).toBe('live');
+  });
+
   it('QA-09: B2B tax invoice above the threshold gets an allocation number', async () => {
     const cust = (await owner.get('/v1/customers?q=כהן')).body[0];
     const big = await owner.post('/v1/documents', { type: 'tax_invoice', customerId: cust.id, lines: [{ name: 'ייעוץ', qtyMilli: 1000, unitPriceAgorot: 11_800_00 }], postToAccount: false }, true);
@@ -243,6 +256,50 @@ describe('documents', () => {
     expect(big.body.allocation_number).toMatch(/^\d{9}$/);
     const small = await owner.post('/v1/documents', { type: 'tax_invoice', customerId: cust.id, lines: [{ name: 'שירות', qtyMilli: 1000, unitPriceAgorot: 1180_00 }], postToAccount: false }, true);
     expect(small.body.allocation_status).toBe('not_required');
+  });
+});
+
+describe('pilot tools', () => {
+  it('creates a training copy: same products and PINs, documents marked as training, no real stock', async () => {
+    const r = await owner.post('/v1/settings/training');
+    expect(r.status).toBe(200);
+    expect(r.body.slug).toBe('demo-train');
+    const again = await owner.post('/v1/settings/training');
+    expect(again.body.id).toBe(r.body.id);
+    const tc = await pinLogin(app, 'demo-train', '1234');
+    expect(tc.tenant.slug).toBe('demo-train');
+    const t = client(app, tc.token);
+    const products = await t.get('/v1/products');
+    expect(products.body.length).toBe(demo.products.length);
+    await t.post('/v1/cash-sessions/open', { registerId: tc.registers[0].id, openingFloatAgorot: 0 });
+    const milk = products.body.find((p: any) => p.sku === '1001');
+    const s = await sell(t, [{ productId: milk.id, qtyMilli: 1000 }], [{ method: 'cash', amountAgorot: 690 }], {}, tc.registers[0].id);
+    expect(s.finalize!.status).toBe(200);
+    const pr = await t.post(`/v1/documents/${s.finalize!.body.document.id}/print`, { format: '80mm' });
+    expect(pr.body.html).toContain('תרגול');
+    expect((await t.put('/v1/settings/documents-mode', { mode: 'live', confirm: 'x' })).status).toBe(403); // קופאי
+    // העסק האמיתי לא הושפע: אין מכירה בתרגול ברשימה שלו
+    const real = await owner.get('/v1/sales?limit=500');
+    expect(real.body.some((x: any) => x.id === s.create.body.id)).toBe(false);
+  });
+
+  it('imports customers with opening balances and products with opening stock', async () => {
+    const dry = await owner.post('/v1/customers/import', { dryRun: true, rows: [{ name: 'לקוח מיובא', phone: '050-0000001', balance: '150.50' }, { name: '' }] });
+    expect(dry.body.failed).toBe(1);
+    const imp = await owner.post('/v1/customers/import', { rows: [{ name: 'לקוח מיובא', phone: '050-0000001', balance: '150.50', kind: 'עסקי', taxId: '512345679' }] });
+    expect(imp.body.created).toBe(1);
+    const found = (await owner.get('/v1/customers?q=לקוח מיובא')).body[0];
+    expect(found.balance_agorot).toBe(15050);
+    const pi = await owner.post('/v1/products/import', { branchId: demo.branchId, rows: [{ sku: 'IMP1', name: 'מוצר מיובא', price: '12.90', stock: '7' }] });
+    expect(pi.body.created).toBe(1);
+    const p = (await owner.get('/v1/products?q=IMP1')).body[0];
+    expect((await owner.get(`/v1/products/${p.id}`)).body.stock[0].on_hand).toBe(7000);
+  });
+
+  it('system info tells the UI which providers are connected', async () => {
+    const r = await app.inject({ method: 'GET', url: '/v1/system/info' });
+    expect(r.json().paymentIntegrated).toBe(true); // בבדיקות: ספק דמה
+    expect(r.json().softwareRegistered).toBe(true);
   });
 });
 

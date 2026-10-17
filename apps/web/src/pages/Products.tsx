@@ -9,7 +9,7 @@ import { api, ApiError, qs } from '../lib/api';
 import { askConfirm } from '../lib/dialogs';
 import { money } from '../lib/format';
 import { printHtml, useBarcodeScanner, useSavedState } from '../lib/misc';
-import { can } from '../lib/session';
+import { can, useSession } from '../lib/session';
 import { showError, showToast } from '../lib/toast';
 import { loadPhase, useLoad } from '../lib/useLoad';
 import { parseCsv } from './office/csv';
@@ -85,11 +85,14 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
   const [report, setReport] = useState<any>(null);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const session = useSession();
+  const [branchId, setBranchId] = useState(session?.user.branchId ?? session?.branches[0]?.id ?? '');
   const rows = text.trim() ? parseCsv(text) : [];
+  const hasStock = rows.some((r) => r.stock !== undefined && r.stock !== '');
   const run = async (dryRun: boolean) => {
     setBusy(true);
     try {
-      const r = await api.post('/products/import', { rows, dryRun });
+      const r = await api.post('/products/import', { rows, dryRun, branchId: hasStock ? branchId : undefined });
       setReport(r);
       if (dryRun) setChecked(true);
       else { showToast(`נוספו ${r.created} מוצרים${r.failed ? `, ${r.failed} שורות נכשלו` : ''}`); if (!r.failed) onDone(); }
@@ -102,7 +105,14 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
       {checked && <button type="button" className="action-btn" disabled={busy || !report?.report?.some((r: any) => r.ok)} onClick={() => run(false)}>ייבוא השורות התקינות</button>}
       <button type="button" className="action-btn ghost" onClick={onClose}>סגירה</button>
     </>}>
-      <p className="section-sub">עמודות: sku, name, price, cost, barcode, category, taxCategory (standard / zero / exempt). מחיר בשקלים, כולל מע"מ. שורה לא תקינה לא נוצרת.</p>
+      <p className="section-sub">עמודות: sku, name, price, cost, barcode, category, taxCategory (standard / zero / exempt), deposit, minStock, stock. מחיר בשקלים, כולל מע"מ. stock — מלאי פתיחה לסניף שנבחר. שורה לא תקינה לא נוצרת.</p>
+      {hasStock && (session?.branches.length ?? 0) > 0 && (
+        <label className="field mb"><span>מלאי הפתיחה ייקלט בסניף</span>
+          <select value={branchId} onChange={(e) => setBranchId(e.target.value)} disabled={!!session?.user.branchId}>
+            {session!.branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </label>
+      )}
       <div className="row-gap mb">
         <label className="action-btn secondary inline"><Icon name="upload" size={18} />בחירת קובץ CSV<input type="file" accept=".csv,text/csv,text/plain" hidden onChange={(e) => onFile(e.target.files?.[0])} /></label>
         <button type="button" className="action-btn ghost inline" onClick={() => { setText(SAMPLE); setChecked(false); setReport(null); }}>דוגמה</button>

@@ -9,6 +9,7 @@ import { useLoad } from '../lib/useLoad';
 import { can } from '../lib/session';
 import { showToast } from '../lib/toast';
 import CustomerForm from './admin/CustomerForm';
+import CustomerImport from './admin/CustomerImport';
 import '../styles/admin.css';
 
 export default function Customers() {
@@ -16,12 +17,17 @@ export default function Customers() {
   const [q, setQ] = useState('');
   const [term, setTerm] = useState('');
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
   const { data, error, loading, reload } = useLoad<any[]>(() => api.get('/customers' + qs({ q: term, limit: 200 })), [term]);
 
   return (
     <div>
       <PageHeader sub="לקוחות רשומים, יתרות חוב ומסגרות אשראי"
-        actions={can('customers:write') && <button className="action-btn inline" onClick={() => setAdding(true)}><Icon name="userPlus" size={18} />לקוח חדש</button>} />
+        actions={can('customers:write') && <>
+          <button className="action-btn secondary inline" onClick={() => setImporting(true)}><Icon name="upload" size={18} />ייבוא</button>
+          <button className="action-btn inline" onClick={() => setAdding(true)}><Icon name="userPlus" size={18} />לקוח חדש</button>
+        </>} />
+      {importing && <CustomerImport onClose={() => setImporting(false)} onDone={() => { setImporting(false); reload(); }} />}
       <form className="search-box" onSubmit={(e) => { e.preventDefault(); setTerm(q.trim()); }}>
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש לפי שם, טלפון או ת.ז. / ע.מ." aria-label="חיפוש לקוח" />
         <button className="icon-btn" aria-label="חיפוש"><Icon name="search" /></button>

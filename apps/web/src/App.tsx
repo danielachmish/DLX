@@ -7,6 +7,7 @@ import { Modal } from './components/ui';
 import { useOnline } from './lib/misc';
 import { usePageHeaderState } from './lib/pageHeader';
 import { can, currentRegister, logout, ROLE_LABEL, type Session, useSession } from './lib/session';
+import { useSystemInfo } from './lib/system';
 import Login from './pages/Login';
 import PublicDocument from './pages/PublicDocument';
 import Dashboard from './pages/Dashboard';
@@ -75,6 +76,8 @@ function Shell({ session }: { session: Session }) {
   const loc = useLocation();
   const header = usePageHeaderState();
   const online = useOnline();
+  const sys = useSystemInfo();
+  const mode = session.tenant.documents_mode ?? 'shadow';
   const [more, setMore] = useState(false);
   const items = useMemo(() => NAV.filter((n) => allowed(n, session)), [session]);
   const mobile = useMemo(() => {
@@ -126,6 +129,9 @@ function Shell({ session }: { session: Session }) {
           </div>
           <div className="top-actions">
             {!online && <span className="ctx-pill offline-pill"><Icon name="offline" size={16} />אין חיבור</span>}
+            {mode === 'training' && <span className="ctx-pill mode-pill training" title="סביבת תרגול — שום דבר כאן לא אמיתי"><Icon name="lamp" size={16} />תרגול</span>}
+            {mode === 'shadow' && <span className="ctx-pill mode-pill" title="פיילוט — המסמכים אינם רשמיים"><Icon name="flag" size={16} />פיילוט</span>}
+            {sys?.demoProviders && <span className="ctx-pill mode-pill training" title="סליקה / רשות המסים בספק דמה — לא לשימוש מול לקוחות">ספק דמה</span>}
             <span className="ctx-pill" title="סניף וקופה">
               <Icon name="store" size={16} /><b>{branch?.name}</b>{reg && can('pos:sell', session) ? ` · ${reg.name}` : ''}
             </span>

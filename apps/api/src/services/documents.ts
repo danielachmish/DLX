@@ -34,6 +34,7 @@ export interface TenantRow {
   id: string; slug: string; legal_name: string; trade_name: string | null; tax_id: string; tax_status: TaxStatus; address: string | null;
   phone: string | null; email: string | null; allow_negative_stock: boolean; return_days: number; return_policy: string | null;
   receipt_footer: string | null; computerized_docs_enabled: boolean; status: string;
+  documents_mode: 'shadow' | 'live' | 'training'; training_of: string | null;
 }
 
 export const loadTenant = async (c: Db, id: string) => {
@@ -75,6 +76,7 @@ export async function issueDocument(c: Db, providers: Providers, input: IssueInp
   const content = {
     type: input.type, code: info.code, serial, issuedAt, taxDate: input.taxDate, issuer, customer: input.customer ?? null,
     lines: input.lines, payments: input.payments ?? [], totals: input.totals, original: input.originalDocumentId ?? null, notes: input.notes ?? null,
+    mode: tenant.documents_mode,
   };
 
   // API-01 / FIS-06: מספר הקצאה לפני ההפקה — כך שהוא מופיע על המסמך עצמו
@@ -83,7 +85,9 @@ export async function issueDocument(c: Db, providers: Providers, input: IssueInp
   const needs = allocationRequired({
     date: input.taxDate, type: input.type, issuerStatus: tenant.tax_status, customerVatId: input.customer?.taxId ?? null, netBeforeVat: input.totals.net,
   });
-  if (needs) {
+  // מספר הקצאה רק למסמך רשמי (live). בפיילוט / תרגול אין חשבונית אמיתית, ולכן אסור לבקש מספר מרשות המסים
+  if (needs && tenant.documents_mode !== 'live') allocationStatus = 'not_required';
+  else if (needs) {
     const res = await providers.allocation.request({
       issuerVatId: tenant.tax_id, customerVatId: input.customer!.taxId!, docCode: info.code, serial, date: input.taxDate,
       netBeforeVat: input.totals.net, vat: input.totals.vat, total: input.totals.total,
@@ -105,12 +109,12 @@ export async function issueDocument(c: Db, providers: Providers, input: IssueInp
   const hash = sha256(canonical(content));
   const doc = await one(c,
     `INSERT INTO documents (tenant_id, doc_type, doc_code, serial, issued_at, tax_date, branch_id, register_id, issuer, customer, lines, payments, totals,
-       net_agorot, vat_agorot, total_agorot, original_document_id, source_type, source_id, allocation_number, allocation_status, content_hash, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23) RETURNING *`,
+       net_agorot, vat_agorot, total_agorot, original_document_id, source_type, source_id, allocation_number, allocation_status, content_hash, created_by, documents_mode)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24) RETURNING *`,
     [input.tenantId, input.type, info.code, serial, issuedAt, input.taxDate, input.branchId ?? null, input.registerId ?? null,
       JSON.stringify(issuer), input.customer ? JSON.stringify(input.customer) : null, JSON.stringify(input.lines),
       JSON.stringify(input.payments ?? []), JSON.stringify({ ...input.totals, notes: input.notes ?? null }), input.totals.net, input.totals.vat,
-      input.totals.total, input.originalDocumentId ?? null, input.sourceType, input.sourceId ?? null, allocationNumber, allocationStatus, hash, input.actorId]);
+      input.totals.total, input.originalDocumentId ?? null, input.sourceType, input.sourceId ?? null, allocationNumber, allocationStatus, hash, input.actorId, tenant.documents_mode]);
 
   await c.query(`UPDATE allocation_requests SET document_id = $2 WHERE tenant_id = $1 AND document_id IS NULL AND (draft->>'serial')::bigint = $3 AND draft->>'type' = $4`,
     [input.tenantId, doc.id, serial, input.type]);
@@ -131,6 +135,7 @@ export function verifyDocumentHash(doc: any): boolean {
     type: doc.doc_type, code: doc.doc_code, serial: Number(doc.serial), issuedAt: new Date(doc.issued_at).toISOString(), taxDate: doc.tax_date,
     issuer: doc.issuer, customer: doc.customer, lines: doc.lines, payments: doc.payments,
     totals: (({ notes: _n, ...t }) => t)(doc.totals), original: doc.original_document_id, notes: doc.totals?.notes ?? null,
+    mode: doc.documents_mode,
   };
   return sha256(canonical(content)) === doc.content_hash;
 }

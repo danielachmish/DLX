@@ -58,7 +58,7 @@ export async function exportRoutes(app: FastifyInstance) {
       const primaryId = String(Date.now()).slice(-15);
       const out = buildOpenFormat({
         tenant, from: q.from, to: q.to, primaryId, documents, items,
-        software: { name: 'DLX', version: '0.1.0', registration: process.env.DLX_SOFTWARE_REGISTRATION ?? '00000000', vendorVatId: process.env.DLX_VENDOR_VAT_ID ?? '000000000', vendorName: 'DLX' },
+        software: { name: 'DLX', version: '0.1.0', registration: app.config.softwareRegistration ?? '00000000', vendorVatId: process.env.DLX_VENDOR_VAT_ID ?? '000000000', vendorName: 'DLX' },
       });
       await audit(c, { tenantId: req.auth.tenantId, actorId: req.auth.userId, action: 'export.open_format', details: { ...q, records: out.totalRecords, primaryId } });
       return { path: out.path, counts: out.counts, totalRecords: out.totalRecords, warning: out.warning, iniBase64: out.ini.toString('base64'), bkmvdataBase64: out.bkmvdata.toString('base64') };

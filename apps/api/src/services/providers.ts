@@ -72,6 +72,31 @@ export class MockAllocationProvider implements AllocationProvider {
   }
 }
 
+// "אין ספק" — ברירת המחדל בייצור עד שנבחר ספק אמיתי. אסור שספק דמה ירוץ מול לקוח אמיתי:
+// הוא "מאשר" חיובים שלא קרו ומחזיר מספרי הקצאה מזויפים.
+export class NoPaymentProvider implements PaymentProvider {
+  name = 'none';
+  async charge(): Promise<ChargeResult> {
+    return { status: 'failed', providerRef: '', failureReason: 'אין מסוף אשראי מחובר. השתמשו ב"מסוף חיצוני" והקלידו את מספר האישור.' };
+  }
+  async status() { return null; }
+  async refund(_ref: string, _amount: number, _key: string) {
+    return { ok: false, providerRef: '', failureReason: 'אין מסוף מחובר — יש לבצע זיכוי במסוף עצמו' };
+  }
+}
+
+export class NoAllocationProvider implements AllocationProvider {
+  name = 'none';
+  async request(): Promise<AllocationResult> {
+    return { status: 'failed', reason: 'החיבור לרשות המסים (חשבוניות ישראל) עוד לא הוגדר', requestId: randomUUID(), retryable: false };
+  }
+}
+
 export interface Providers { payments: PaymentProvider; allocation: AllocationProvider }
 
-export const createProviders = (): Providers => ({ payments: new MockPaymentProvider(), allocation: new MockAllocationProvider() });
+export function createProviders(kind: { payments: 'mock' | 'none'; allocation: 'mock' | 'none' } = { payments: 'mock', allocation: 'mock' }): Providers {
+  return {
+    payments: kind.payments === 'mock' ? new MockPaymentProvider() : new NoPaymentProvider(),
+    allocation: kind.allocation === 'mock' ? new MockAllocationProvider() : new NoAllocationProvider(),
+  };
+}

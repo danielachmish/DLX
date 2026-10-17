@@ -59,7 +59,7 @@ export async function documentRoutes(app: FastifyInstance) {
       }
       const orig = d.original_document_id ? await one(c, 'SELECT serial FROM documents WHERE id = $1', [d.original_document_id]) : null;
       const viewUrl = d.public_token ? `${app.config.publicBaseUrl}/d/${d.public_token}` : null;
-      return { html: renderDocumentHtml(d, { format: format as PrintFormat, mark, viewUrl, originalSerial: orig?.serial ?? null }), mark };
+      return { html: renderDocumentHtml(d, { format: format as PrintFormat, mark, viewUrl, originalSerial: orig?.serial ?? null, softwareRegistration: app.config.softwareRegistration }), mark };
     });
   });
 
@@ -88,7 +88,7 @@ export async function documentRoutes(app: FastifyInstance) {
     const html = await withTenant(app.pool, hit.tenant_id, async (c) => {
       const d = await one(c, 'SELECT * FROM documents WHERE id = $1', [hit.document_id]);
       const orig = d.original_document_id ? await one(c, 'SELECT serial FROM documents WHERE id = $1', [d.original_document_id]) : null;
-      return renderDocumentHtml(d, { format: 'a4', mark: 'העתק נאמן למקור', originalSerial: orig?.serial ?? null });
+      return renderDocumentHtml(d, { format: 'a4', mark: 'העתק נאמן למקור', originalSerial: orig?.serial ?? null, softwareRegistration: app.config.softwareRegistration });
     });
     reply.header('content-type', 'text/html; charset=utf-8').header('x-robots-tag', 'noindex').header('cache-control', 'private, no-store');
     return html;

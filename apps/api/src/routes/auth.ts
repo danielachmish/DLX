@@ -28,7 +28,7 @@ export async function authRoutes(app: FastifyInstance) {
 
   const session = async (tenantId: string, userId: string) => withTenant(app.pool, tenantId, async (c) => {
     const u = await one(c, 'SELECT id, name, email, role, branch_id, token_version FROM users WHERE id = $1', [userId]);
-    const t = await one(c, 'SELECT id, slug, legal_name, trade_name, tax_id, tax_status, status FROM tenants WHERE id = $1', [tenantId]);
+    const t = await one(c, 'SELECT id, slug, legal_name, trade_name, tax_id, tax_status, status, documents_mode, training_of FROM tenants WHERE id = $1', [tenantId]);
     const branches = await many(c, 'SELECT id, name, tax_zone FROM branches WHERE active ORDER BY created_at');
     const registers = await many(c, 'SELECT id, branch_id, code, name FROM registers WHERE active ORDER BY code');
     const token = sign({ tid: tenantId, uid: u.id, role: u.role, bid: u.branch_id, tv: u.token_version });

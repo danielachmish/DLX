@@ -115,3 +115,7 @@
 @media (min-width: 481px) { .content.pos-mode { padding: 0; } }
 .nav-full { display: none; }
 @media (min-width: 1200px) { .app-nav .nav-full { display: inline; } .app-nav .nav-short { display: none; } }
+
+.mode-pill { background: var(--orange-soft); color: var(--orange); box-shadow: none; font-weight: 700; }
+.mode-pill.training { background: var(--red-soft); color: var(--red); }
+@media (max-width: 480px) { .top-actions .ctx-pill:not(.mode-pill):not(.offline-pill) { display: none; } }

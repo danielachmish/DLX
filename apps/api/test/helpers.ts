@@ -18,7 +18,7 @@ export async function resetDb() {
 }
 
 export async function makeApp() {
-  const config = { ...loadConfig(), databaseUrl: APP_URL, ownerUrl: OWNER_URL, logger: false, jwtSecret: 'test-secret' };
+  const config = { ...loadConfig(), databaseUrl: APP_URL, ownerUrl: OWNER_URL, logger: false, jwtSecret: 'test-secret', softwareRegistration: '12345678' };
   return buildApp(config);
 }
 

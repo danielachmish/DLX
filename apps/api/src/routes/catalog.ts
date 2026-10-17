@@ -225,7 +225,7 @@ export async function catalogRoutes(app: FastifyInstance) {
 
   // PRD-07: ייבוא — שורה לא תקינה לא יוצרת מוצר; דוח שגיאות לכל שורה
   app.post('/products/import', { preHandler: requireAuth('catalog:write') }, async (req) => {
-    const b = z.object({ rows: z.array(z.record(z.string(), z.unknown())).max(5000), dryRun: z.boolean().default(false) }).parse(req.body);
+    const b = z.object({ rows: z.array(z.record(z.string(), z.unknown())).max(5000), dryRun: z.boolean().default(false), branchId: z.string().uuid().optional() }).parse(req.body);
     return tx(req, async (c) => {
       const report: { row: number; ok: boolean; sku?: string; error?: string }[] = [];
       const seen = new Set<string>();
@@ -237,6 +237,9 @@ export async function catalogRoutes(app: FastifyInstance) {
           costAgorot: raw.cost ? Math.round(Number(String(raw.cost).replace(/[₪,\s]/g, '')) * 100) : undefined,
           taxCategory: raw.taxCategory || 'standard', barcodes: raw.barcode ? [{ barcode: String(raw.barcode) }] : [],
           unitMeasure: raw.unitMeasure || 'unit',
+          depositAgorot: raw.deposit ? Math.round(Number(String(raw.deposit).replace(/[₪,\s]/g, '')) * 100) : 0,
+          minStockMilli: raw.minStock ? Math.round(Number(raw.minStock) * 1000) : 0,
+          restriction: raw.restriction || 'none',
         });
         if (!parsed.success) { report.push({ row: i + 1, ok: false, sku: String(raw.sku ?? ''), error: parsed.error.issues.map((x) => `${x.path.join('.')}: ${x.message}`).join('; ') }); continue; }
         const p = parsed.data;
@@ -244,9 +247,19 @@ export async function catalogRoutes(app: FastifyInstance) {
         seen.add(p.sku);
         if (await one(c, 'SELECT 1 FROM products WHERE sku = $1', [p.sku])) { report.push({ row: i + 1, ok: false, sku: p.sku, error: 'מק"ט כבר קיים' }); continue; }
         if (b.dryRun) { report.push({ row: i + 1, ok: true, sku: p.sku }); continue; }
+        // מלאי פתיחה (INT-07): עמודת stock — נקלטת כתנועת "opening" בסניף שנבחר
+        const stock = raw.stock !== undefined && raw.stock !== '' ? Math.round(Number(String(raw.stock).replace(',', '.')) * 1000) : 0;
+        if (raw.stock !== undefined && raw.stock !== '' && (!Number.isFinite(stock) || stock < 0)) { report.push({ row: i + 1, ok: false, sku: p.sku, error: 'כמות מלאי לא תקינה' }); continue; }
+        if (stock > 0 && !b.branchId) { report.push({ row: i + 1, ok: false, sku: p.sku, error: 'יש עמודת מלאי — צריך לבחור סניף' }); continue; }
         await c.query('SAVEPOINT imp');
         try {
-          await createProduct(c, req.auth.tenantId, req.auth.userId, p);
+          const product = await createProduct(c, req.auth.tenantId, req.auth.userId, p);
+          if (stock > 0) {
+            await c.query(
+              `INSERT INTO stock_movements (tenant_id, branch_id, product_id, qty_delta_milli, unit_cost_agorot, source_type, reason, actor_id)
+               VALUES ($1,$2,$3,$4,$5,'opening','מלאי פתיחה (ייבוא)',$6)`,
+              [req.auth.tenantId, b.branchId, product.id, stock, product.cost_agorot, req.auth.userId]);
+          }
           await c.query('RELEASE SAVEPOINT imp');
           created++;
           report.push({ row: i + 1, ok: true, sku: p.sku });

@@ -123,12 +123,12 @@ export async function settingsRoutes(app: FastifyInstance) {
       // IAM-02: שינוי תפקיד / השבתה / סיסמה — מבטל אסימונים קיימים
       const bump = (b.role && b.role !== cur.role) || b.active === false || !!b.password || (b.branchId !== undefined && b.branchId !== cur.branch_id);
       const r = await one(c,
-        `UPDATE users SET name = COALESCE($2, name), email = COALESCE(lower($3), email), role = COALESCE($4, role),
+        `UPDATE users SET name = COALESCE($2, name), email = CASE WHEN $11::boolean THEN lower($3) ELSE email END, role = COALESCE($4, role),
            branch_id = CASE WHEN $5::boolean THEN $6::uuid ELSE branch_id END, active = COALESCE($7, active),
            password_hash = COALESCE($8, password_hash), pin_hash = COALESCE($9, pin_hash), token_version = token_version + $10
          WHERE id = $1 RETURNING ${userCols}`,
         [id, b.name ?? null, b.email ?? null, b.role ?? null, b.branchId !== undefined, b.branchId ?? null, b.active ?? null,
-          b.password ? await hashSecret(b.password) : null, b.pin ? await hashSecret(b.pin) : null, bump ? 1 : 0]);
+          b.password ? await hashSecret(b.password) : null, b.pin ? await hashSecret(b.pin) : null, bump ? 1 : 0, b.email !== undefined]);
       await audit(c, {
         tenantId: req.auth.tenantId, actorId: req.auth.userId, action: 'user.update', targetType: 'user', targetId: id,
         details: { role: b.role, active: b.active, password: !!b.password, pin: !!b.pin, branch: b.branchId },
@@ -136,6 +136,42 @@ export async function settingsRoutes(app: FastifyInstance) {
       return r;
     });
   });
+
+  // ===== מצב מסמכים (פיילוט / רשמי) =====
+  // shadow: הכל עובד, המסמכים מסומנים "פיילוט — לא מסמך רשמי". live: רק אחרי רישום התוכנה ברשות המסים,
+  // רק בעלים, ורק עם הקלדת משפט אישור — כדי שאף אחד לא יעבור לרשמי בטעות.
+  app.get('/settings/documents-mode', { preHandler: requireAuth() }, async (req) => tx(req, async (c) => {
+    const t = await one(c, 'SELECT documents_mode, documents_mode_changed_at, training_of FROM tenants WHERE id = $1', [req.auth.tenantId]);
+    const training = await one(c, 'SELECT dlx_training_slug($1) AS slug', [req.auth.tenantId]);
+    return { ...t, softwareRegistered: !!app.config.softwareRegistration, allocationConnected: app.providers.allocation.name !== 'none', trainingSlug: training?.slug ?? null };
+  }));
+
+  const LIVE_CONFIRM = 'אני מאשר שהתוכנה רשומה ושרו"ח אישר את המסמכים';
+  app.put('/settings/documents-mode', { preHandler: requireAuth('settings:write') }, async (req) => {
+    const b = z.object({ mode: z.enum(['shadow', 'live']), confirm: z.string().optional() }).parse(req.body);
+    return tx(req, async (c) => {
+      const t = await one(c, 'SELECT documents_mode, training_of FROM tenants WHERE id = $1 FOR UPDATE', [req.auth.tenantId]);
+      if (t.training_of) throw new AppError(422, 'rule', 'סביבת תרגול לא יכולה להפיק מסמכים רשמיים');
+      if (b.mode === 'live') {
+        if (req.auth.role !== 'owner') throw new AppError(403, 'forbidden', 'מעבר למסמכים רשמיים — רק בעל העסק');
+        if (!app.config.softwareRegistration) throw new AppError(422, 'not_registered', 'התוכנה עוד לא רשומה ברשות המסים. אי אפשר להפיק מסמכים רשמיים.');
+        if (b.confirm?.trim() !== LIVE_CONFIRM) throw new AppError(422, 'confirm', `צריך להקליד בדיוק: ${LIVE_CONFIRM}`);
+      }
+      await c.query('UPDATE tenants SET documents_mode = $2, documents_mode_changed_at = now(), documents_mode_changed_by = $3 WHERE id = $1', [req.auth.tenantId, b.mode, req.auth.userId]);
+      await audit(c, { tenantId: req.auth.tenantId, actorId: req.auth.userId, action: 'settings.documents_mode', details: { from: t.documents_mode, to: b.mode } });
+      return { documents_mode: b.mode };
+    });
+  });
+
+  // ===== סביבת תרגול לקופאים =====
+  // עסק נפרד "<קוד>-train" עם אותם מוצרים, קופות ועובדים (אותו PIN). אין לקוחות, אין מלאי, וכל מסמך מסומן "תרגול"
+  app.post('/settings/training', { preHandler: requireAuth('settings:write') }, async (req) => tx(req, async (c) => {
+    const t = await one(c, 'SELECT slug, training_of FROM tenants WHERE id = $1', [req.auth.tenantId]);
+    if (t.training_of) throw new AppError(422, 'rule', 'כבר נמצאים בסביבת התרגול');
+    const r = await one(c, 'SELECT dlx_create_training($1) AS id', [req.auth.tenantId]);
+    await audit(c, { tenantId: req.auth.tenantId, actorId: req.auth.userId, action: 'settings.training', details: { trainingTenant: r.id } });
+    return { id: r.id, slug: `${t.slug.slice(0, 34)}-train` };
+  }));
 
   // ===== יומן ביקורת =====
   app.get('/audit', { preHandler: requireAuth('audit:read') }, async (req) => {

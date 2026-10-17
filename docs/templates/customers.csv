@@ -1,0 +1,3 @@
+name,kind,taxId,phone,email,address,creditLimit,balance
+משרד כהן,business,512345679,03-5550000,office@cohen.co.il,"הרצל 5, תל אביב",5000,1250.00
+רינה לוי,private,,052-4445566,,,0,0

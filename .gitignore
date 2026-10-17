@@ -6,3 +6,5 @@ coverage/
 .env.*
 !.env.example
 apps/web/dev-dist/
+deploy/backups/
+deploy/.env

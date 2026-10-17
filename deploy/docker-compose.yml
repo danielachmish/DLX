@@ -1,0 +1,71 @@
+# DLX — הפעלה על שרת אחד (פיילוט). להפעלה: cp .env.example .env ולמלא, ואז: docker compose up -d --build
+# בייצור רחב יותר: Postgres מנוהל (DATABASE_URL חיצוני) במקום השירות db, ו-2 עותקים של api מאחורי Load Balancer.
+name: dlx
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      DLX_OWNER_PASSWORD: ${DLX_OWNER_PASSWORD:?}
+      DLX_APP_PASSWORD: ${DLX_APP_PASSWORD:?}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dlx"]
+      interval: 5s
+      retries: 20
+
+  migrate:
+    build: { context: .., target: api }
+    command: ["node", "--import", "tsx", "src/migrate.ts"]
+    environment:
+      DATABASE_OWNER_URL: postgres://dlx_owner:${DLX_OWNER_PASSWORD}@db:5432/dlx
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    build: { context: .., target: api }
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://dlx_app:${DLX_APP_PASSWORD}@db:5432/dlx
+      DATABASE_OWNER_URL: postgres://dlx_owner:${DLX_OWNER_PASSWORD}@db:5432/dlx
+      JWT_SECRET: ${JWT_SECRET:?}
+      PUBLIC_BASE_URL: https://${DLX_DOMAIN:?}
+      DLX_SOFTWARE_REGISTRATION: ${DLX_SOFTWARE_REGISTRATION:-}
+      DLX_VENDOR_VAT_ID: ${DLX_VENDOR_VAT_ID:-}
+      ERROR_WEBHOOK_URL: ${ERROR_WEBHOOK_URL:-}
+      PAYMENT_PROVIDER: none
+      ALLOCATION_PROVIDER: none
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    build: { context: .., target: web }
+    restart: unless-stopped
+    environment:
+      DLX_DOMAIN: ${DLX_DOMAIN:?}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - caddydata:/data
+    depends_on: [api]
+
+  # גיבוי: כל לילה pg_dump מוצפן לתיקייה ./backups (להעתיק גם מחוץ לשרת! ר' docs/deploy.md)
+  backup:
+    build: { context: .., target: backup }
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${DLX_OWNER_PASSWORD}
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:?}
+      KEEP_DAYS: ${BACKUP_KEEP_DAYS:-35}
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  dbdata:
+  caddydata:

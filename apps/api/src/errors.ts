@@ -50,5 +50,14 @@ export function errorHandler(err: FastifyError | Error, req: FastifyRequest, rep
   }
   req.log.error({ err }, 'unhandled');
   if (process.env.DLX_DEBUG_ERRORS) console.error('UNHANDLED', err);
+  notifyError(req, err);
   return send(500, 'server_error', 'משהו השתבש בשרת. נסו שוב.', { retryable: true });
+}
+
+// התראה על שגיאת שרת (NFR-09): POST ל-ERROR_WEBHOOK_URL (Slack / Teams / שירות ניטור). בלי מידע אישי — רק נתיב, קוד ומזהה
+function notifyError(req: FastifyRequest, err: Error) {
+  const url = (req.server as any).config?.errorWebhookUrl as string | null;
+  if (!url) return;
+  const text = `DLX server error ${req.method} ${req.routeOptions.url ?? ''} — ${err.name}: ${String(err.message).slice(0, 300)} (correlation ${req.id})`;
+  fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) }).catch(() => {});
 }

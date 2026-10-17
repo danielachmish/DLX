@@ -1,7 +1,8 @@
 // גיליון תשלום (POS-03, PAY-01..PAY-07): פיצול אמצעים, עודף ועיגול מזומן, אשראי עם מפתח קבוע לניסיון חוזר,
 // וסגירה אטומית בשרת. אחרי הצלחה — מסך "סיום" עם עודף, מספר מסמך, הדפסה ושליחת קישור.
 import { cashRound, parseShekels, type Tender, tenderState } from '@dlx/core';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSystemInfo } from '../../lib/system';
 import Icon from '../../components/Icon';
 import NumPad from '../../components/NumPad';
 import { Field, Modal, Money } from '../../components/ui';
@@ -29,7 +30,10 @@ export default function PaySheet({ sale: initial, customer, onDone, onClosed }: 
   const [tenders, setTenders] = useState<LocalTender[]>([]);
   const [method, setMethod] = useState<Method>('cash');
   const [amount, setAmount] = useState('');
+  const sys = useSystemInfo();
   const [terminal, setTerminal] = useState<'integrated' | 'external'>('integrated');
+  // אין מסוף מחובר בשרת הזה — רק "מסוף חיצוני" (הקופאי מקליד את מספר האישור)
+  useEffect(() => { if (sys && !sys.paymentIntegrated) setTerminal('external'); }, [sys]);
   const [approval, setApproval] = useState('');
   const [last4, setLast4] = useState('');
   const [installments, setInstallments] = useState(1);
@@ -181,7 +185,7 @@ export default function PaySheet({ sale: initial, customer, onDone, onClosed }: 
             {method === 'card' && (
               <div className="stack">
                 <div className="chips">
-                  <button type="button" className={cls('chip-f', terminal === 'integrated' && 'on')} onClick={() => setTerminal('integrated')}>מסוף מחובר</button>
+                  {sys?.paymentIntegrated !== false && <button type="button" className={cls('chip-f', terminal === 'integrated' && 'on')} onClick={() => setTerminal('integrated')}>מסוף מחובר</button>}
                   <button type="button" className={cls('chip-f', terminal === 'external' && 'on')} onClick={() => setTerminal('external')}>מסוף חיצוני</button>
                 </div>
                 <div className="form-grid">

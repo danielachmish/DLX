@@ -32,14 +32,32 @@ export async function buildApp(config: Config, deps: { pool?: Pool; providers?: 
   });
   app.decorate('pool', deps.pool ?? createPool(config.databaseUrl));
   app.decorate('config', config);
-  app.decorate('providers', deps.providers ?? createProviders());
+  app.decorate('providers', deps.providers ?? createProviders({ payments: config.paymentProvider, allocation: config.allocationProvider }));
   app.decorateRequest('auth', null as any);
 
-  await app.register(cors, { origin: true, exposedHeaders: ['x-correlation-id'] });
+  await app.register(cors, { origin: config.corsOrigins, exposedHeaders: ['x-correlation-id'] });
   await app.register(jwt, { secret: config.jwtSecret, sign: { expiresIn: '12h' } });
   await app.register(rateLimit, { global: false });
-  app.addHook('onSend', async (req, reply) => { reply.header('x-correlation-id', req.id); });
+  app.addHook('onSend', async (req, reply) => {
+    reply.header('x-correlation-id', req.id);
+    // כותרות אבטחה בסיסיות (NFR-07)
+    reply.header('x-content-type-options', 'nosniff');
+    reply.header('referrer-policy', 'no-referrer');
+    reply.header('x-frame-options', 'SAMEORIGIN');
+    reply.header('permissions-policy', 'camera=(self), geolocation=(), microphone=()');
+    if (!reply.getHeader('cache-control')) reply.header('cache-control', 'no-store');
+  });
   app.setErrorHandler(errorHandler);
+
+  // מה מחובר בשרת הזה — הממשק מסתיר אפשרויות שלא קיימות (למשל מסוף מחובר)
+  app.get('/v1/system/info', async () => ({
+    paymentIntegrated: app.providers.payments.name !== 'none',
+    paymentProvider: app.providers.payments.name,
+    allocationConnected: app.providers.allocation.name !== 'none',
+    allocationProvider: app.providers.allocation.name,
+    softwareRegistered: !!config.softwareRegistration,
+    demoProviders: app.providers.payments.name === 'mock' || app.providers.allocation.name === 'mock',
+  }));
 
   app.get('/health', async () => {
     await app.pool.query('SELECT 1');

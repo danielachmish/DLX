@@ -65,6 +65,41 @@ export async function customerRoutes(app: FastifyInstance) {
     });
   });
 
+  // INT-07: ייבוא לקוחות מהמערכת הקודמת, כולל יתרת פתיחה (חוב חיובי). שורה לא תקינה לא נקלטת
+  app.post('/customers/import', { preHandler: requireAuth('customers:write') }, async (req) => {
+    const b = z.object({ rows: z.array(z.record(z.string(), z.unknown())).max(10000), dryRun: z.boolean().default(false) }).parse(req.body);
+    const canCredit = can(req.auth.role, 'customers:credit');
+    return tx(req, async (c) => {
+      const report: { row: number; ok: boolean; name?: string; error?: string }[] = [];
+      let created = 0;
+      const toAgorot = (v: unknown) => (v === undefined || v === null || v === '' ? 0 : Math.round(Number(String(v).replace(/[₪,\s]/g, '')) * 100));
+      for (const [i, raw] of b.rows.entries()) {
+        const parsed = Customer.safeParse({
+          name: String(raw.name ?? '').trim(), kind: raw.kind === 'business' || raw.kind === 'עסקי' ? 'business' : 'private',
+          taxId: raw.taxId ? String(raw.taxId).trim() : null, phone: raw.phone ? String(raw.phone).trim() : null,
+          email: raw.email ? String(raw.email).trim() : '', address: raw.address ? String(raw.address) : null,
+          creditLimitAgorot: toAgorot(raw.creditLimit), notes: raw.notes ? String(raw.notes) : null,
+        });
+        const balance = toAgorot(raw.balance);
+        if (!parsed.success) { report.push({ row: i + 1, ok: false, name: String(raw.name ?? ''), error: parsed.error.issues.map((x) => `${x.path.join('.')}: ${x.message}`).join('; ') }); continue; }
+        if (!Number.isFinite(balance)) { report.push({ row: i + 1, ok: false, name: parsed.data.name, error: 'יתרה לא תקינה' }); continue; }
+        if ((parsed.data.creditLimitAgorot ?? 0) > 0 && !canCredit) { report.push({ row: i + 1, ok: false, name: parsed.data.name, error: 'מסגרת אשראי — רק מנהל' }); continue; }
+        if (b.dryRun) { report.push({ row: i + 1, ok: true, name: parsed.data.name }); continue; }
+        const d = parsed.data;
+        const cu = await one(c,
+          `INSERT INTO customers (tenant_id, name, kind, tax_id, phone, email, address, credit_limit_agorot, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+          [req.auth.tenantId, d.name, d.kind, d.taxId?.replace(/\D/g, '') || null, d.phone ?? null, d.email || null, d.address ?? null, d.creditLimitAgorot ?? 0, d.notes ?? null]);
+        if (balance !== 0) {
+          await c.query("INSERT INTO customer_ledger (tenant_id, customer_id, amount_agorot, source_type) VALUES ($1,$2,$3,'opening')", [req.auth.tenantId, cu.id, balance]);
+        }
+        created++;
+        report.push({ row: i + 1, ok: true, name: d.name });
+      }
+      if (!b.dryRun) await audit(c, { tenantId: req.auth.tenantId, actorId: req.auth.userId, action: 'customer.import', details: { rows: b.rows.length, created } });
+      return { created, failed: report.filter((r) => !r.ok).length, report };
+    });
+  });
+
   // CRM-02: כל ההיסטוריה המקושרת
   app.get('/customers/:id', { preHandler: requireAuth('customers:read') }, async (req) => {
     const { id } = req.params as { id: string };

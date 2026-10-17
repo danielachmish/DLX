@@ -3,7 +3,9 @@
 מערכת ניהול חנות לישראל: קופה, מלאי, רכש וקליטה, לקוחות, מסמכים חשבונאיים ודוחות.
 SaaS רב-עסקי, ממשק אחד שעובד בטלפון, באייפד ובמחשב (PWA).
 
-> ⚠ **לפני שימוש אמיתי:** התוכנה עדיין לא רשומה ברשות המסים, החיבור לשע"מ ולסליקה הוא בספק דמה, והקובץ במבנה אחיד הוא טיוטה. אסור להפיק מסמכים אמיתיים לפני שכל הסעיפים ב-[docs/compliance.md](docs/compliance.md) נסגרו.
+> ⚠ **מצב פיילוט:** כל עסק נפתח במצב "פיילוט". המערכת עובדת מלא, וכל מסמך מודפס כ"פיילוט — לא מסמך רשמי". המעבר למסמכים רשמיים חסום עד שהתוכנה רשומה ברשות המסים (`DLX_SOFTWARE_REGISTRATION`), ודורש אישור בעלים. בייצור לא רצים ספקי דמה: אשראי עובר במסוף חיצוני עם מספר אישור. ר' [docs/compliance.md](docs/compliance.md).
+
+**התקנה בשרת:** [docs/deploy.md](docs/deploy.md) · **תוכנית פיילוט:** [docs/pilot-playbook.md](docs/pilot-playbook.md)
 
 ## מבנה
 
@@ -60,3 +62,7 @@ pnpm typecheck
 - [docs/compliance.md](docs/compliance.md): מצב הציות, מה ממומש ומה דורש גורם מקצועי
 - [docs/operations.md](docs/operations.md): אירוח, גיבוי, ניטור, תקלות, חומרה
 - [docs/design-system.md](docs/design-system.md): קטלוג רכיבים ומסכים
+- [docs/deploy.md](docs/deploy.md): התקנה עם Docker, HTTPS, גיבוי מוצפן, תרגול שחזור, עדכון גרסה
+- [docs/pilot-playbook.md](docs/pilot-playbook.md): צ'קליסט הקמה, הדרכה, בדיקות יומיות, מדדי הצלחה, מעבר לרשמי
+- [docs/legal/](docs/legal/): טיוטות לעו"ד — הסכם פיילוט, הסכם עיבוד מידע, מדיניות פרטיות
+- [docs/templates/](docs/templates/): תבניות CSV לייבוא מוצרים ולקוחות
