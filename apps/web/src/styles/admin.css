@@ -1,0 +1,16 @@
+/* DLX — מסכי משרד: לקוחות, דוחות, ייצוא, הגדרות. רק טוקנים. */
+.range-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-bottom: var(--space-3); }
+.range-bar .field { flex: 1 1 150px; min-width: 140px; }
+.range-bar .action-btn { margin-top: 0; width: auto; flex: 0 0 auto; padding-inline: 20px; }
+.ledger-amt.debt { color: var(--red); }
+.ledger-amt.credit { color: var(--green); }
+.consent-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--surface-2); }
+.consent-row:last-child { border-bottom: none; }
+.consent-row small { display: block; color: var(--muted); font-size: 12px; }
+.exc-section { margin-bottom: var(--space-4); }
+.exc-section h3 { font-size: 15px; margin: 0 0 var(--space-2); display: flex; align-items: center; gap: 8px; }
+.export-card .action-btn { width: auto; }
+.chain-ok { color: var(--green); font-weight: 700; }
+.chain-bad { color: var(--red); font-weight: 700; }
+.audit-details { font-size: 12px; color: var(--muted); max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; unicode-bidi: plaintext; }
+.seg-choices { display: flex; flex-wrap: wrap; gap: 6px; }
