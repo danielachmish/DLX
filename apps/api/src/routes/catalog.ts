@@ -3,7 +3,7 @@ import { DEFAULT_SCALE, internalBarcode, normalizeBarcode, parseScaleBarcode } f
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { audit } from '../audit.js';
-import { hasPerm, requireAuth, tx } from '../auth.js';
+import { branchScope, hasPerm, requireAuth, tx } from '../auth.js';
 import { type Db, many, nextNumber, one } from '../db.js';
 import { AppError, notFound } from '../errors.js';
 
@@ -138,7 +138,7 @@ export async function catalogRoutes(app: FastifyInstance) {
         p = await one(c, `${PRODUCT_SELECT} WHERE p.sku = $1 AND p.status = 'active'`, [q.code]);
       }
       if (!p) throw new AppError(404, 'unknown_barcode', `לא נמצא מוצר לברקוד ${q.code}`);
-      const bp = await branchPrice(c, p.id, q.branchId ?? req.auth.branchId);
+      const bp = await branchPrice(c, p.id, branchScope(req, q.branchId));
       return { product: publicProduct(req, p), qtyMilli, unitPrice: price ?? bp ?? p.price_agorot, fixedLinePrice: price !== null };
     });
   });

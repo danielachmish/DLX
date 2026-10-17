@@ -187,7 +187,7 @@ export async function salesRoutes(app: FastifyInstance) {
       q: z.string().optional(), limit: z.coerce.number().int().min(1).max(500).default(100),
     }).parse(req.query);
     return tx(req, (c) => many(c,
-      `SELECT s.id, s.status, s.created_at, s.finalized_at, s.total_agorot, s.register_id, r.name AS register_name, u.name AS cashier_name,
+      `SELECT s.id, s.status, s.created_at, s.finalized_at, s.total_agorot, s.register_id, s.document_id, r.name AS register_name, u.name AS cashier_name,
          cu.name AS customer_name, d.serial AS document_serial, d.doc_type AS document_type
        FROM sales s JOIN registers r ON r.id = s.register_id LEFT JOIN users u ON u.id = s.cashier_id LEFT JOIN customers cu ON cu.id = s.customer_id
        LEFT JOIN documents d ON d.id = s.document_id

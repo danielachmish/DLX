@@ -1,0 +1,25 @@
+/* DLX — מסכי משרד (לוח בקרה, מוצרים, מלאי, רכש). רק טוקנים. */
+.picker { position: relative; }
+.picker-results { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; max-height: 260px; overflow-y: auto; }
+.picker-results button { display: flex; justify-content: space-between; gap: 8px; align-items: center; text-align: start; border: none; background: var(--bg); border-radius: var(--radius-sm); padding: 10px 12px; font-family: inherit; color: var(--text); cursor: pointer; min-height: var(--tap); font-size: 14px; }
+.picker-results button:hover { background: var(--teal-light); }
+.line-editor { display: flex; flex-direction: column; gap: 8px; }
+.line-row { display: grid; grid-template-columns: minmax(0, 1fr) 96px 110px var(--tap); gap: 8px; align-items: center; background: var(--bg); border-radius: var(--radius-sm); padding: 8px 10px; }
+.line-row .nm { font-weight: 600; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.line-row .nm small { display: block; color: var(--muted); font-weight: 400; }
+.line-row input { width: 100%; font-size: 16px; }
+@media (max-width: 560px) { .line-row { grid-template-columns: minmax(0, 1fr) 80px var(--tap); } .line-row .cost { grid-column: 1 / -2; } }
+.count-progress { height: 10px; background: var(--surface-2); border-radius: var(--radius-pill); overflow: hidden; }
+.count-progress > span { display: block; height: 100%; background: var(--teal-2); border-radius: var(--radius-pill); }
+.scan-box { display: flex; gap: 8px; }
+.scan-box input { flex: 1; min-width: 0; font-size: 18px; padding: 14px 18px; border-radius: var(--radius-pill); background: var(--card); box-shadow: var(--shadow-sm); }
+.qty-input { width: 96px; font-size: 16px; text-align: center; }
+.csv-text { width: 100%; min-height: 140px; font-family: monospace; font-size: 13px; direction: ltr; }
+.report-list { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.report-list .bad { color: var(--red); }
+.barcode-row { display: flex; gap: 8px; align-items: center; }
+.barcode-row input { flex: 1; min-width: 0; direction: ltr; }
+.barcode-row select { width: 110px; }
+.hour-chart .bars { height: 140px; padding-bottom: 20px; }
+.dash-grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); align-items: start; margin-top: var(--space-3); }
+.plain-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }

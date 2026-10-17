@@ -27,7 +27,7 @@ const ReturnIn = z.object({
 
 export async function returnRoutes(app: FastifyInstance) {
   app.get('/returns', { preHandler: requireAuth('pos:sell') }, async (req) => tx(req, (c) => many(c,
-    `SELECT r.id, r.number, r.created_at, r.total_agorot, r.reason, r.refund_method, d.serial AS document_serial, d.doc_type AS document_type,
+    `SELECT r.id, r.number, r.document_id, r.sale_id, r.created_at, r.total_agorot, r.reason, r.refund_method, d.serial AS document_serial, d.doc_type AS document_type,
        sd.serial AS sale_document_serial, u.name AS cashier_name
      FROM returns r LEFT JOIN documents d ON d.id = r.document_id LEFT JOIN sales s ON s.id = r.sale_id LEFT JOIN documents sd ON sd.id = s.document_id
      LEFT JOIN users u ON u.id = r.cashier_id ORDER BY r.number DESC LIMIT 200`)));

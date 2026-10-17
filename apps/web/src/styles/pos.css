@@ -1,0 +1,28 @@
+/* DLX — תוספות למסכי הקופה, המשמרות וההחזרות (רק טוקנים) */
+.pos-gate { padding: var(--space-4) 14px; }
+.content-pad { padding: var(--space-4) 14px; }
+.pos-ctx .right { margin-inline-start: auto; }
+.pos-reg .field { flex-direction: row; align-items: center; gap: 6px; }
+.pos-reg .field > span { display: none; }
+.pos-reg select { min-height: 34px; padding: 4px 10px; font-size: 13px; width: auto; }
+.pos-done-title { font-size: 24px; }
+.pos-doc-line { text-align: center; font-size: 16px; margin: 0; }
+.pos-link { flex-direction: column; }
+.pos-link-url { word-break: break-all; font-size: 13px; }
+.cart-line .qty-ctl button:disabled { opacity: .4; cursor: default; }
+.pay-bar .action-btn:disabled { background: var(--btn-disabled-bg); color: var(--btn-disabled-fg); }
+
+/* משמרות ודוחות X / Z */
+.z-grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); align-items: start; }
+.variance { text-align: center; border-radius: var(--radius-md); padding: 12px; font-weight: 700; }
+.variance.ok { background: var(--green-soft); color: var(--green); }
+.variance.bad { background: var(--orange-soft); color: var(--orange); }
+.variance b { display: block; font-size: 26px; }
+
+/* החזרות */
+.ret-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--surface-2); }
+.ret-line:last-child { border-bottom: none; }
+.ret-line .ctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.ret-line select { width: auto; min-height: 38px; }
+.ret-line.off { opacity: .55; }
+.voucher-code { font-size: 30px; font-weight: 800; letter-spacing: 2px; text-align: center; direction: ltr; background: var(--doc-credit-soft); color: var(--doc-credit); border-radius: var(--radius-md); padding: 14px; }

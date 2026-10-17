@@ -1,9 +1,9 @@
 // ספקים, הזמנות רכש וקליטת סחורה (PUR-01..PUR-07, RCV-01..RCV-08, WF-02)
 import { assertTransition, isValidIsraeliId } from '@dlx/core';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { audit } from '../audit.js';
-import { assertPerm, branchScope, requireAuth, tx } from '../auth.js';
+import { assertPerm, branchScope, hasPerm, requireAuth, tx } from '../auth.js';
 import { type Db, many, nextNumber, one } from '../db.js';
 import { AppError, notFound } from '../errors.js';
 import { addMovement, takeStock, updateAverageCost } from '../services/stock.js';
@@ -21,7 +21,7 @@ const Po = z.object({ supplierId: z.string().uuid(), branchId: z.string().uuid()
 
 const GrLine = z.object({
   productId: z.string().uuid(), poLineId: z.string().uuid().nullable().optional(), qtyMilli: z.number().int().positive(),
-  unitCostAgorot: z.number().int().min(0), condition: z.enum(['ok', 'damaged']).default('ok'),
+  unitCostAgorot: z.number().int().min(0).optional(), condition: z.enum(['ok', 'damaged']).default('ok'),
 });
 const Gr = z.object({
   poId: z.string().uuid().nullable().optional(), supplierId: z.string().uuid(), branchId: z.string().uuid(),
@@ -45,6 +45,22 @@ async function loadGr(c: Db, id: string) {
   gr.total_agorot = gr.lines.reduce((a: number, l: any) => a + Math.round((l.qty_milli * l.unit_cost_agorot) / 1000), 0);
   return gr;
 }
+
+// T20: מחסנאי קולט כמויות בלי לראות עלויות — עלות חסרה נלקחת משורת ההזמנה או מעלות המוצר
+async function resolveCost(c: Db, l: { productId: string; poLineId?: string | null; unitCostAgorot?: number }) {
+  if (l.unitCostAgorot !== undefined) return l.unitCostAgorot;
+  if (l.poLineId) {
+    const pl = await one(c, 'SELECT unit_cost_agorot FROM purchase_order_lines WHERE id = $1', [l.poLineId]);
+    if (pl) return pl.unit_cost_agorot as number;
+  }
+  return ((await one(c, 'SELECT cost_agorot FROM products WHERE id = $1', [l.productId]))?.cost_agorot ?? 0) as number;
+}
+
+const hideCosts = (req: FastifyRequest, x: any) => {
+  if (hasPerm(req, 'costs:read') || !x) return x;
+  const { total_agorot: _t, supplier_invoice_total_agorot: _s, ...rest } = x;
+  return { ...rest, lines: (x.lines ?? []).map(({ unit_cost_agorot: _c, ...l }: any) => l) };
+};
 
 export async function purchasingRoutes(app: FastifyInstance) {
   // ===== ספקים =====
@@ -150,13 +166,13 @@ export async function purchasingRoutes(app: FastifyInstance) {
   });
 
   // ===== קליטת סחורה =====
-  app.get('/goods-receipts', { preHandler: requireAuth('stock:read') }, async (req) => tx(req, (c) => many(c,
+  app.get('/goods-receipts', { preHandler: requireAuth('stock:read') }, async (req) => tx(req, (c) => many<any>(c,
     `SELECT g.id, g.number, g.status, g.supplier_doc_ref, g.created_at, g.posted_at, s.name AS supplier_name, po.number AS po_number, b.name AS branch_name,
        (SELECT COALESCE(SUM(ROUND(qty_milli * unit_cost_agorot / 1000.0)),0) FROM goods_receipt_lines l WHERE l.receipt_id = g.id) AS total_agorot
      FROM goods_receipts g JOIN suppliers s ON s.id = g.supplier_id JOIN branches b ON b.id = g.branch_id LEFT JOIN purchase_orders po ON po.id = g.po_id
-     ORDER BY g.number DESC LIMIT 200`)));
+     ORDER BY g.number DESC LIMIT 200`)).then((rows) => (hasPerm(req, 'costs:read') ? rows : rows.map(({ total_agorot: _t, ...r }) => r))));
 
-  app.get('/goods-receipts/:id', { preHandler: requireAuth('stock:read') }, async (req) => tx(req, (c) => loadGr(c, (req.params as any).id)));
+  app.get('/goods-receipts/:id', { preHandler: requireAuth('stock:read') }, async (req) => hideCosts(req, await tx(req, (c) => loadGr(c, (req.params as any).id))));
 
   // RCV-01 / RCV-02: מתוך הזמנה (השורות הפתוחות נטענות) או ישירה עם סיבה
   app.post('/goods-receipts', { preHandler: requireAuth('inventory:receive') }, async (req) => {
@@ -181,9 +197,9 @@ export async function purchasingRoutes(app: FastifyInstance) {
         [req.auth.tenantId, number, b.poId ?? null, b.supplierId, b.branchId, b.supplierDocRef ?? null, b.supplierInvoiceTotalAgorot ?? null, b.reason ?? null, req.auth.userId]);
       for (const l of lines) {
         await c.query('INSERT INTO goods_receipt_lines (tenant_id, receipt_id, product_id, po_line_id, qty_milli, unit_cost_agorot, condition) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-          [req.auth.tenantId, gr.id, l.productId, l.poLineId ?? null, l.qtyMilli, l.unitCostAgorot, l.condition]);
+          [req.auth.tenantId, gr.id, l.productId, l.poLineId ?? null, l.qtyMilli, await resolveCost(c, l), l.condition]);
       }
-      return loadGr(c, gr.id);
+      return hideCosts(req, await loadGr(c, gr.id));
     });
   });
 
@@ -201,9 +217,9 @@ export async function purchasingRoutes(app: FastifyInstance) {
       await c.query('DELETE FROM goods_receipt_lines WHERE receipt_id = $1', [id]);
       for (const l of b.lines) {
         await c.query('INSERT INTO goods_receipt_lines (tenant_id, receipt_id, product_id, po_line_id, qty_milli, unit_cost_agorot, condition) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-          [req.auth.tenantId, id, l.productId, l.poLineId ?? null, l.qtyMilli, l.unitCostAgorot, l.condition]);
+          [req.auth.tenantId, id, l.productId, l.poLineId ?? null, l.qtyMilli, await resolveCost(c, l), l.condition]);
       }
-      return loadGr(c, id);
+      return hideCosts(req, await loadGr(c, id));
     });
   });
 
@@ -214,7 +230,7 @@ export async function purchasingRoutes(app: FastifyInstance) {
     return tx(req, async (c) => {
       const gr = await one(c, 'SELECT * FROM goods_receipts WHERE id = $1 FOR UPDATE', [id]);
       if (!gr) throw notFound('הקליטה');
-      if (gr.status === 'posted') return { ...(await loadGr(c, id)), replay: true };
+      if (gr.status === 'posted') return { ...hideCosts(req, await loadGr(c, id)), replay: true };
       const lines = await many(c, 'SELECT l.*, p.name FROM goods_receipt_lines l JOIN products p ON p.id = l.product_id WHERE l.receipt_id = $1', [id]);
       if (lines.length === 0) throw new AppError(422, 'invalid', 'אין שורות לקליטה');
       const over: string[] = [];
@@ -245,7 +261,7 @@ export async function purchasingRoutes(app: FastifyInstance) {
       const variance = gr.supplier_invoice_total_agorot != null ? gr.supplier_invoice_total_agorot - out.total_agorot : null;
       await audit(c, { tenantId: req.auth.tenantId, actorId: req.auth.userId, action: 'goods_receipt.post', targetType: 'goods_receipt', targetId: id, details: { lines: lines.length, total: out.total_agorot, variance, over } });
       await c.query(`INSERT INTO outbox_events (tenant_id, event_type, payload) VALUES ($1,'GoodsReceiptPosted',$2)`, [req.auth.tenantId, JSON.stringify({ id, number: gr.number })]);
-      return { ...out, invoice_variance_agorot: variance };
+      return hasPerm(req, 'costs:read') ? { ...out, invoice_variance_agorot: variance } : hideCosts(req, out);
     });
   });
 

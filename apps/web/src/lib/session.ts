@@ -40,6 +40,7 @@ export function getRegisterId(): string | null {
 }
 export function setRegisterId(id: string) {
   try { localStorage.setItem(REG_KEY, id); } catch { /* לא קריטי */ }
+  if (current) current = { ...current }; // snapshot חדש — כדי שכל מי שמשתמש ב-useSession יתעדכן
   listeners.forEach((l) => l());
 }
 
